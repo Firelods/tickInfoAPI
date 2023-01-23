@@ -6,7 +6,7 @@ exports.signup = (req, res) => {
     User.create({
         nom: req.body.nom,
         prenom: req.body.prenom,
-        groupe: req.body.groupe,
+        // groupe: req.body.groupe,
         email: req.body.email,
         password: bcrypt.hashSync(req.body.password, 8),
         bde: req.body.bde,

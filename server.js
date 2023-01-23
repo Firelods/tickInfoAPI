@@ -6,7 +6,7 @@ let app = express();
 const sequelize = require("./config/db.config");
 var corsOptions = {
   origin: "https://ticket.seinksansdoozebank.engineer",
-  origin: "http://localhost:4200",
+  // origin: "http://localhost:4200",
   credentials: true,
 };
 app.use(cors(corsOptions));
