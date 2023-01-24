@@ -70,14 +70,13 @@ exports.makeUserParticipate = (req, res) => {
         }).then(async (participation) => {
             //make a jwt token to make it a QR code
 
-            const token = jwt.sign({ email, bde, idEvent, idParticipation: participation[0].id }, "BDEINFONICE2023", {
-                expiresIn: 86400, // 24 hours
+            const token = jwt.sign({ idParticipation: participation[0].id }, "BDEINFONICE2023", {
+                expiresIn: 1209600, // 24 hours
             });
             // make a qrcode to send it by mail
             const qrImage = QRCode.toFile('qrCode.png', token, opts).then(() => {
                 console.log('done');
                 var file = fs.readFileSync('qrCode.png');
-                console.log(file);
                 var attch = new mg.Attachment({ data: file, filename: "QrCodeSoirée.png", contentType: 'image/png' });
                 const data = {
                     from: 'BDE bde@seinksansdoozebank.engineer',
@@ -107,21 +106,45 @@ exports.useInvite = (req, res) => {
     jwt.verify(token, "BDEINFONICE2023", function (err, decoded) {
         console.log(decoded);
         if (err) {
-            res.status(500).send({ message: err.message });
+            res.status(200).send({ message: err.message });
         }
         else {
-            Participation.update({
-                used: true,
-            }, {
+            // first check if the participation is not already used
+            var idUserFromParticipation = 0;
+            Participation.findOne({
                 where: {
                     id: decoded.idParticipation,
                 },
             }).then((participation) => {
-                console.log(participation);
-                res.send({ message: "Etudiant entré !" });
-            }).catch((err) => {
-                res.status(500).send({ message: err.message });
-            });;// if error log it
+                idUserFromParticipation = participation.id_user;
+                if (participation.used) {
+                    res.status(200).send({ message: "Participation déjà utilisée !" });
+                    return;
+                }
+                else {
+                    Participation.update({
+                        used: true,
+                    }, {
+                        where: {
+                            id: decoded.idParticipation,
+                        },
+                    }).then((participation) => {
+                        //search for the user through the participation id  (inner join)
+                        console.log(idUserFromParticipation);
+                        User.findOne({
+                            where: {
+                                id: idUserFromParticipation,
+                            },
+                        }).then((user) => {
+                            console.log(participation);
+                            res.send({ message: "Etudiant " + user.nom + " " + user.prenom + " entré " });
+                        });
+                    }).catch((err) => {
+                        res.status(200).send({ message: err.message });
+                    });;// if error log it
+
+                }
+            });
 
         }
     });
